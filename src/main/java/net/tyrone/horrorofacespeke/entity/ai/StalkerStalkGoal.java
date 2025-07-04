@@ -12,8 +12,13 @@ public class StalkerStalkGoal extends Goal {
     private Player targetPlayer;
     private int stalkCooldown;
     private int jumpscareBuildup;
+    private int observedTicks;
+    private int retreatCooldown;
     private boolean isPreparingJumpscare;
+    private boolean isRetreating;
     private static final int JUMPSCARE_BUILDUP_TIME = 60; // 3 seconds
+    private static final int MAX_OBSERVED_TIME = 40; // 2 seconds before reacting
+    private static final int RETREAT_DURATION = 80; // 4 seconds
 
     public StalkerStalkGoal(StalkerEntity stalker) {
         this.stalker = stalker;
@@ -22,7 +27,7 @@ public class StalkerStalkGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        this.targetPlayer = this.stalker.level.getNearestPlayer(this.stalker, 20.0);
+        this.targetPlayer = this.stalker.level.getNearestPlayer(this.stalker, 25.0);
         return this.targetPlayer != null && !this.targetPlayer.isCreative() &&
                 !this.targetPlayer.isSpectator() && stalkCooldown <= 0;
     }
@@ -30,21 +35,27 @@ public class StalkerStalkGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         return this.targetPlayer != null && this.targetPlayer.isAlive() &&
-                this.stalker.distanceToSqr(this.targetPlayer) < 400.0; // 20 blocks
+                this.stalker.distanceToSqr(this.targetPlayer) < 625.0; // 25 blocks
     }
 
     @Override
     public void start() {
         this.stalkCooldown = 0;
         this.jumpscareBuildup = 0;
+        this.observedTicks = 0;
+        this.retreatCooldown = 0;
         this.isPreparingJumpscare = false;
+        this.isRetreating = false;
     }
 
     @Override
     public void stop() {
         this.stalkCooldown = 100; // 5 second cooldown
         this.isPreparingJumpscare = false;
+        this.isRetreating = false;
         this.jumpscareBuildup = 0;
+        this.observedTicks = 0;
+        this.retreatCooldown = 0;
     }
 
     @Override
@@ -56,52 +67,116 @@ public class StalkerStalkGoal extends Goal {
             return;
         }
 
+        if (retreatCooldown > 0) {
+            retreatCooldown--;
+        }
+
         double distanceToPlayer = this.stalker.distanceToSqr(this.targetPlayer);
         boolean playerCanSeeMe = canPlayerSeeEntity();
 
-        // Very close range - jumpscare preparation
-        if (distanceToPlayer < 9.0 && !playerCanSeeMe) { // 3 blocks
-            if (!isPreparingJumpscare) {
-                isPreparingJumpscare = true;
-                jumpscareBuildup = 0;
-                // Stop moving and prepare for jumpscare
-                this.stalker.getNavigation().stop();
+        // Handle being observed
+        if (playerCanSeeMe) {
+            observedTicks++;
+
+            // If observed for too long, react aggressively
+            if (observedTicks > MAX_OBSERVED_TIME && !isRetreating) {
+                triggerObservedReaction();
+                return;
             }
 
-            jumpscareBuildup++;
+            // Freeze when being looked at
+            this.stalker.getNavigation().stop();
 
-            // Look at player menacingly
+            // Stare back menacingly
             this.stalker.getLookControl().setLookAt(targetPlayer, 30.0F, 30.0F);
 
-            if (jumpscareBuildup >= JUMPSCARE_BUILDUP_TIME) {
-                // Execute jumpscare
-                this.stalker.jumpscare(targetPlayer);
-                this.stop();
-            }
-        } else if (distanceToPlayer < 25.0) { // 5 blocks
-            // Close range - move in for attack when not seen
-            if (!playerCanSeeMe) {
-                this.stalker.getNavigation().moveTo(targetPlayer, 1.4);
+        } else {
+            // Reset observation counter when not being watched
+            observedTicks = Math.max(0, observedTicks - 2);
+        }
 
-                // Random chance for immediate attack when very close
-                if (distanceToPlayer < 4.0 && stalker.getRandom().nextFloat() < 0.1f) {
+        // Handle retreat behavior
+        if (isRetreating) {
+            if (retreatCooldown <= 0) {
+                isRetreating = false;
+            } else {
+                executeRetreat();
+                return;
+            }
+        }
+
+        // Normal stalking behavior when not being observed
+        if (!playerCanSeeMe && !isRetreating) {
+            // Very close range - jumpscare preparation
+            if (distanceToPlayer < 9.0) { // 3 blocks
+                if (!isPreparingJumpscare) {
+                    isPreparingJumpscare = true;
+                    jumpscareBuildup = 0;
+                    this.stalker.getNavigation().stop();
+                }
+
+                jumpscareBuildup++;
+                this.stalker.getLookControl().setLookAt(targetPlayer, 30.0F, 30.0F);
+
+                if (jumpscareBuildup >= JUMPSCARE_BUILDUP_TIME) {
+                    this.stalker.jumpscare(targetPlayer);
+                    this.stop();
+                }
+            } else if (distanceToPlayer < 36.0) { // 6 blocks
+                // Close range - move in for attack
+                this.stalker.getNavigation().moveTo(targetPlayer, 1.2);
+                isPreparingJumpscare = false;
+                jumpscareBuildup = 0;
+
+                // Random chance for immediate attack when close
+                if (distanceToPlayer < 16.0 && stalker.getRandom().nextFloat() < 0.05f) {
                     this.stalker.jumpscare(targetPlayer);
                     this.stop();
                 }
             } else {
-                // Player is looking, freeze or slowly back away
-                this.stalker.getNavigation().stop();
-                if (stalker.getRandom().nextFloat() < 0.3f) {
-                    // Sometimes slowly back away
-                    Vec3 retreatDirection = stalker.position().subtract(targetPlayer.position()).normalize();
-                    Vec3 retreatPos = stalker.position().add(retreatDirection.scale(3));
-                    this.stalker.getNavigation().moveTo(retreatPos.x, retreatPos.y, retreatPos.z, 0.5);
-                }
+                // Medium range - handled by other goals
+                isPreparingJumpscare = false;
+                jumpscareBuildup = 0;
             }
-        } else {
-            // Medium range - stalk behavior handled by StalkerHideGoal
-            isPreparingJumpscare = false;
-            jumpscareBuildup = 0;
+        }
+    }
+
+    private void triggerObservedReaction() {
+        isRetreating = true;
+        retreatCooldown = RETREAT_DURATION;
+
+        // 70% chance to apply blindness effect
+        if (stalker.getRandom().nextFloat() < 0.7f) {
+            targetPlayer.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.BLINDNESS, 60, 0)); // 3 seconds
+
+            // Play scary sound
+            targetPlayer.playSound(net.minecraft.sounds.SoundEvents.WARDEN_AMBIENT, 1.0f, 0.6f);
+        }
+
+        // 50% chance to teleport away immediately
+        if (stalker.getRandom().nextFloat() < 0.5f) {
+            stalker.teleportRandomly();
+            this.stop();
+        }
+    }
+
+    private void executeRetreat() {
+        Vec3 playerPos = targetPlayer.position();
+        Vec3 retreatDirection = stalker.position().subtract(playerPos).normalize();
+
+        // Add some randomness to retreat direction
+        double angle = stalker.getRandom().nextDouble() * Math.PI / 2 - Math.PI / 4; // ±45 degrees
+        double newX = retreatDirection.x * Math.cos(angle) - retreatDirection.z * Math.sin(angle);
+        double newZ = retreatDirection.x * Math.sin(angle) + retreatDirection.z * Math.cos(angle);
+
+        Vec3 retreatPos = stalker.position().add(newX * 20, 0, newZ * 20);
+        this.stalker.getNavigation().moveTo(retreatPos.x, retreatPos.y, retreatPos.z, 1.5);
+
+        // 30% chance to teleport away during retreat
+        if (stalker.getRandom().nextFloat() < 0.3f) {
+            stalker.teleportRandomly();
+            this.stop();
         }
     }
 
