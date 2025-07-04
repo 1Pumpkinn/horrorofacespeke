@@ -1,27 +1,47 @@
 package net.tyrone.horrorofacespeke.entity.brain;
 
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.behavior.Behavior;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
+import net.minecraft.world.entity.ai.memory.WalkTarget;
+import net.minecraft.world.entity.ai.targeting.TargetingConditions;
+import net.minecraft.world.entity.player.Player;
 import net.tyrone.horrorofacespeke.entity.custom.StalkerEntity;
-import net.minecraft.world.entity.ai.behavior.BehaviorUtils;
-import net.minecraft.world.entity.ai.util.LandRandomPos;
 
-import java.util.Optional;
+import java.util.Map;
 
-public class StalkerFollowVisiblePlayer {
+public class StalkerFollowVisiblePlayer extends Behavior<StalkerEntity> {
 
-    public static BehaviorControl<StalkerEntity> create() {
-        return BehaviorBuilder.create(stalker -> stalker.group(
-                stalker.registered(MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES),
-                stalker.absent(MemoryModuleType.WALK_TARGET)
-        ).apply((memory, world, entity, time) -> {
-            Optional<LivingEntity> target = memory.get(MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES)
-                    .flatMap(list -> list.stream().filter(e -> e instanceof net.minecraft.world.entity.player.Player).findFirst());
+    public StalkerFollowVisiblePlayer() {
+        super(Map.of(MemoryModuleType.NEAREST_PLAYERS, MemoryStatus.VALUE_PRESENT));
+    }
 
-            target.ifPresent(player -> BehaviorUtils.setWalkAndLookTargetMemories(entity, player, 1.0f, 6));
-            return true;
-        }));
+    @Override
+    protected boolean checkExtraStartConditions(ServerLevel world, StalkerEntity stalker) {
+        return stalker.getBrain().getMemory(MemoryModuleType.NEAREST_PLAYERS)
+                .map(players -> players.stream()
+                        .anyMatch(player -> stalker.hasLineOfSight(player)))
+                .orElse(false);
+    }
+
+    @Override
+    protected void start(ServerLevel world, StalkerEntity stalker, long gameTime) {
+        stalker.getBrain().getMemory(MemoryModuleType.NEAREST_PLAYERS).ifPresent(players -> {
+            players.stream()
+                    .filter(player -> stalker.hasLineOfSight(player))
+                    .findFirst()
+                    .ifPresent(player -> {
+                        stalker.getBrain().setMemory(MemoryModuleType.WALK_TARGET,
+                                new WalkTarget(player, 1.0F, 6));
+                        // Set look target using the player's position
+                        stalker.getLookControl().setLookAt(player, 30.0F, 30.0F);
+                    });
+        });
+    }
+
+    @Override
+    protected void stop(ServerLevel world, StalkerEntity stalker, long gameTime) {
+        stalker.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
     }
 }

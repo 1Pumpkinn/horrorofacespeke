@@ -6,6 +6,7 @@ import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.behavior.LookAtTargetSink;
 import net.minecraft.world.entity.ai.behavior.MoveToTargetSink;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.entity.schedule.Schedule;
@@ -37,21 +38,19 @@ public class StalkerBrain {
     }
 
     public static void tick(StalkerEntity stalker) {
-        if (stalker.level() instanceof ServerLevel level) {
-            stalker.getBrain().tick(level, stalker);
-        }
+        // Simplified - let the Goal system handle the behavior
+        // Brain system can be complex in Forge 1.19.2
     }
 
     public static final List<MemoryModuleType<?>> MEMORY_MODULES = List.of(
-            MemoryModuleType.NEAREST_VISIBLE_PLAYER,
+            MemoryModuleType.NEAREST_PLAYERS,
             MemoryModuleType.LOOK_TARGET,
             MemoryModuleType.WALK_TARGET,
             MemoryModuleType.PATH
     );
 
-    public static final List<SensorType<?>> SENSOR_TYPES = List.of(
+    public static final List<SensorType<? extends Sensor<? super StalkerEntity>>> SENSOR_TYPES = List.of(
             SensorType.NEAREST_PLAYERS,
-            SensorType.NEAREST_VISIBLE_PLAYER,
             SensorType.HURT_BY
     );
 }
