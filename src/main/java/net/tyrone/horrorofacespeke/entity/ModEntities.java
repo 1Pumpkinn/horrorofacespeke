@@ -15,5 +15,8 @@ public class ModEntities {
     public static final RegistryObject<EntityType<StalkerEntity>> STALKER = ENTITY_TYPES.register("stalker",
             () -> EntityType.Builder.of(StalkerEntity::new, MobCategory.MONSTER)
                     .sized(0.6f, 1.95f) // Player size
+                    .clientTrackingRange(1000)
+                    .setTrackingRange(100000)
+                    .canSpawnFarFromPlayer()
                     .build("stalker"));
 }
