@@ -18,6 +18,7 @@ import net.tyrone.horrorofacespeke.entity.ModEntities;
 import net.tyrone.horrorofacespeke.entity.custom.StalkerEntity;
 import net.tyrone.horrorofacespeke.commands.TriggerJumpscareCommand;
 import net.tyrone.horrorofacespeke.client.renderer.StalkerRenderer;
+import net.tyrone.horrorofacespeke.item.ModItems;
 import org.slf4j.Logger;
 
 @Mod(Horrorofacespeke.MODID)
@@ -30,6 +31,9 @@ public class Horrorofacespeke {
 
         // Register entities
         ModEntities.ENTITY_TYPES.register(modEventBus);
+
+        // Register items (spawn eggs)
+        ModItems.ITEMS.register(modEventBus);
 
         // Register setup methods
         modEventBus.addListener(this::commonSetup);

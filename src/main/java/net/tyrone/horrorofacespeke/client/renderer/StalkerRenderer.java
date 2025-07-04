@@ -11,8 +11,7 @@ import net.tyrone.horrorofacespeke.entity.custom.StalkerEntity;
 public class StalkerRenderer extends MobRenderer<StalkerEntity, PlayerModel<StalkerEntity>> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(Horrorofacespeke.MODID, "textures/entity/acespeke.png");
-
+            new ResourceLocation(Horrorofacespeke.MODID + ":textures/entity/acespeke.png");
 
     public StalkerRenderer(EntityRendererProvider.Context context) {
         super(context, new PlayerModel<>(context.bakeLayer(ModelLayers.PLAYER), false), 0.5f);
