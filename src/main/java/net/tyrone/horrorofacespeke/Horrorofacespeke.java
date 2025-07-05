@@ -1,8 +1,6 @@
 package net.tyrone.horrorofacespeke;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -16,7 +14,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.tyrone.horrorofacespeke.entity.ModEntities;
 import net.tyrone.horrorofacespeke.entity.custom.StalkerEntity;
-import net.tyrone.horrorofacespeke.commands.TriggerJumpscareCommand;
 import net.tyrone.horrorofacespeke.client.renderer.StalkerRenderer;
 import net.tyrone.horrorofacespeke.item.ModItems;
 import org.slf4j.Logger;
@@ -51,7 +48,6 @@ public class Horrorofacespeke {
     public static class ForgeEvents {
         @SubscribeEvent
         public static void onRegisterCommands(RegisterCommandsEvent event) {
-            TriggerJumpscareCommand.register(event.getDispatcher());
         }
     }
 
