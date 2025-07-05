@@ -6,16 +6,15 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.tyrone.horrorofacespeke.Horrorofacespeke;
-import net.tyrone.horrorofacespeke.entity.custom.StalkerEntity;
+import net.tyrone.horrorofacespeke.entity.acespeke.AcespekeEntityImpl;
 
 public class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, Horrorofacespeke.MODID);
 
-    public static final RegistryObject<EntityType<StalkerEntity>> STALKER = ENTITY_TYPES.register("stalker",
-            () -> EntityType.Builder.of(StalkerEntity::new, MobCategory.MONSTER)
+    public static final RegistryObject<EntityType<AcespekeEntityImpl>> ACESPEKE = ENTITY_TYPES.register("acespeke",
+            () -> EntityType.Builder.of(AcespekeEntityImpl::new, MobCategory.MONSTER)
                     .sized(0.6f, 1.95f) // Player size
                     .clientTrackingRange(1000)
-                    .setTrackingRange(100000)
-                    .build("stalker"));
+                    .build("acespeke"));
 }

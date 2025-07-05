@@ -6,9 +6,9 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.tyrone.horrorofacespeke.Horrorofacespeke;
-import net.tyrone.horrorofacespeke.entity.custom.StalkerEntity;
+import net.tyrone.horrorofacespeke.entity.acespeke.AcespekeEntity;
 
-public class StalkerRenderer extends MobRenderer<StalkerEntity, PlayerModel<StalkerEntity>> {
+public class StalkerRenderer extends MobRenderer<AcespekeEntity, PlayerModel<AcespekeEntity>> {
 
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(Horrorofacespeke.MODID + ":textures/entity/acespeke.png");
@@ -18,7 +18,7 @@ public class StalkerRenderer extends MobRenderer<StalkerEntity, PlayerModel<Stal
     }
 
     @Override
-    public ResourceLocation getTextureLocation(StalkerEntity entity) {
+    public ResourceLocation getTextureLocation(AcespekeEntity entity) {
         return TEXTURE;
     }
 }

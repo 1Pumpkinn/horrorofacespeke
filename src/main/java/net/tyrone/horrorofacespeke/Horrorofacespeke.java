@@ -11,10 +11,13 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.tyrone.horrorofacespeke.entity.ModEntities;
-import net.tyrone.horrorofacespeke.entity.custom.StalkerEntity;
-import net.tyrone.horrorofacespeke.client.renderer.StalkerRenderer;
+import net.tyrone.horrorofacespeke.entity.acespeke.AcespekeEntity;
+import net.tyrone.horrorofacespeke.entity.acespeke.AcespekeEntityType;
+import net.tyrone.horrorofacespeke.entity.acespeke.ai.AcespekeAIManager;
+import net.tyrone.horrorofacespeke.client.renderer.AcespekeRenderer;
 import net.tyrone.horrorofacespeke.item.ModItems;
 import org.slf4j.Logger;
 
@@ -27,23 +30,41 @@ public class Horrorofacespeke {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // Register entities
-        ModEntities.ENTITY_TYPES.register(modEventBus);
+        AcespekeEntityType.ENTITIES.register(modEventBus);
 
         // Register items (spawn eggs)
         ModItems.ITEMS.register(modEventBus);
 
         // Register setup methods
         modEventBus.addListener(this::commonSetup);
-
-        // Register for Forge events
-        MinecraftForge.EVENT_BUS.register(this);
+        modEventBus.addListener(this::onEntityAttributeCreation);
+        
+        // Register for server stopping event
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
+    }
+    
+    private void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        AcespekeAIManager.onServerStopping();
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Common setup for Horrorofacespeke");
     }
+    
+    private void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
+        // Entity attributes are registered in ModEvents.onAttributeCreate
+    }
 
     // Handles Forge commands
+    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    public static class ClientModEvents {
+        @SubscribeEvent
+        public static void onClientSetup(FMLClientSetupEvent event) {
+            // Register entity renderers
+            EntityRenderers.register(AcespekeEntityType.ACESPEKE.get(), AcespekeRenderer::new);
+        }
+    }
+
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static class ForgeEvents {
         @SubscribeEvent
@@ -56,7 +77,7 @@ public class Horrorofacespeke {
     public static class ModEvents {
         @SubscribeEvent
         public static void onAttributeCreate(EntityAttributeCreationEvent event) {
-            event.put(ModEntities.STALKER.get(), StalkerEntity.createAttributes().build());
+            event.put(ModEntities.ACESPEKE.get(), AcespekeEntity.createAttributes().build());
         }
     }
 
@@ -70,7 +91,7 @@ public class Horrorofacespeke {
 
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-            event.registerEntityRenderer(ModEntities.STALKER.get(), StalkerRenderer::new);
+                event.registerEntityRenderer(ModEntities.ACESPEKE.get(), AcespekeRenderer::new);
         }
     }
 }
