@@ -80,13 +80,13 @@ public class StalkerEntity extends Monster {
 
     @Override
     protected void registerGoals() {
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
         this.goalSelector.addGoal(2, new net.tyrone.horrorofacespeke.entity.ai.goals.StalkerFleeGoal(this));
         this.goalSelector.addGoal(3, new net.tyrone.horrorofacespeke.entity.ai.goals.StalkerStalkGoal(this, 1.0D));
         this.goalSelector.addGoal(4, new net.tyrone.horrorofacespeke.entity.ai.goals.StalkerAttackGoal(this, 1.4D, true));
         this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8D));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -147,6 +147,10 @@ public class StalkerEntity extends Monster {
     public boolean doHurtTarget(Entity target) {
         if (super.doHurtTarget(target)) {
             this.playSound(SoundEvents.PLAYER_HURT, 1.0F, 1.0F);
+            // Only set target to null if we're not in aggressive mode
+            if (!aggressive) {
+                this.setTarget(null);
+            }
             return true;
         }
         return false;
@@ -156,17 +160,8 @@ public class StalkerEntity extends Monster {
     public boolean hurt(DamageSource source, float amount) {
         boolean res = super.hurt(source, amount);
         if (!level.isClientSide && source.getEntity() instanceof Player player) {
-            if (this.random.nextBoolean()) {
-                // === FLEE MODE ===
-                this.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.INVISIBILITY, 200, 0, false, false));
-                fleeing = true;
-                aggressive = false;      // ensure we don't keep attacking while fleeing
-                this.setTarget(null);
-                lastDamagingPlayer = player;
-            } else {
-                // === HUNT MODE ===
-                becomeAggressive(player);
-            }
+            // Always become aggressive when hit by a player
+            becomeAggressive(player);
         }
         return res;
     }
